@@ -2,7 +2,7 @@ defmodule BitcoinDashboardWeb.UserSocket do
   use Phoenix.Socket
 
   ## Channels
-  # channel "room:*", BitcoinDashboardWeb.RoomChannel
+  channel "room:lobby", BitcoinDashboardWeb.RoomChannel
 
   # Socket params are passed from the client and can
   # be used to verify and authenticate a user. After

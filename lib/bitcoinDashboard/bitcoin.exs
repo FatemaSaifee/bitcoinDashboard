@@ -20,7 +20,7 @@ defmodule Bitcoin do
 	@doc """
 	Main
 	The System can be configured using two input parameters:
-		numOfWallets -  the number of wallets in the Bitcoin network 
+		numOfWallets -  the number of wallets in the Bitcoin network
 		numOfTransactions - the number of random Transactions to be made between wallets.
 	"""
 	def main do
@@ -32,7 +32,7 @@ defmodule Bitcoin do
 		{numOfTransactions, _} = Integer.parse(numOfTransactions)
 		networkId = generateNetwork()
 		IO.puts "Network created..."
-		
+
 		transactionId = genesisTransaction()
 		# IO.puts transactionId
 		IO.puts "Genesis transaction created..."
@@ -44,27 +44,27 @@ defmodule Bitcoin do
 		blockchain = [genesisBlockId]
 		IO.puts "Blockchain created with Genesis block..."
 		updateNetworkBlockchain(networkId, blockchain)
-		
+
 
 		# Create wallets
-		
-		walletPublicKeyList = Enum.map(1..numOfWallets, fn(x) -> 
+
+		walletPublicKeyList = Enum.map(1..numOfWallets, fn(x) ->
 			generateWallet(x, blockchain, networkId)
 		end)
 
-		allWalletIds = Enum.map(0..numOfWallets-1, fn(x) -> 
+		allWalletIds = Enum.map(0..numOfWallets-1, fn(x) ->
 			Enum.fetch!(Enum.fetch!(walletPublicKeyList, x), 0)
 		end)
 
-		allPublicKeys = Enum.map(0..numOfWallets-1, fn(x) -> 
+		allPublicKeys = Enum.map(0..numOfWallets-1, fn(x) ->
 			Enum.fetch!(Enum.fetch!(walletPublicKeyList, x), 1)
 		end)
 
 		updateNetworkWalletIdMaps(networkId,walletPublicKeyList)
 
-		
 
-		Enum.each(0..numOfWallets-1, fn(x) -> 
+
+		Enum.each(0..numOfWallets-1, fn(x) ->
 			wId =  Enum.fetch!(Enum.fetch!(walletPublicKeyList, x), 0)
 			updateWalletPublicKeys(wId, allPublicKeys)
 			# IO.inspect :calendar.local_time()
@@ -74,8 +74,8 @@ defmodule Bitcoin do
 		end)
 
 		# IO.puts("\nMining in progress...\n")
-		:timer.sleep(1000*numOfWallets)	
-		Enum.each(1..numOfTransactions,fn(x)-> 
+		:timer.sleep(1000*numOfWallets)
+		Enum.each(1..numOfTransactions,fn(x)->
 			[sender,receiver] = Enum.take_random(allWalletIds,2)
 			amountToSend = 7.5
 			# IO.puts "Transaction #{x} :"
@@ -87,7 +87,7 @@ defmodule Bitcoin do
 				# getWalletBalance(y)
 			end)
 			# IO.puts("-----------------------------")
-			
+
 		end)
 		:timer.sleep(1)
 
@@ -95,7 +95,7 @@ defmodule Bitcoin do
 	waitIndefinitely()
 	end
 
-	
+
 
 	################################################
 	# Basic blockchain functions
@@ -125,31 +125,31 @@ defmodule Bitcoin do
 		   		     	false
 					else
 						true
-					end		
+					end
 				end
 		end
-		
+
 	end
 
 
 	@doc """
 	Mining
 
-		# Performs Bitcoin mining for the walletId sent in the input. 
-		# Gets the latest blockchain from the network and updates the current version of the blockchain maintained by the wallet. 
-		# Using the hash of the last block on the blockchain, a random nonce value is appended to the hash and this new string is hashed again. 
-		# If we get a hash with the required target leading 0s, we have managed to mine a bitcoin successfully. 
-		# In this case, we create a coinbase transaction, add it to a block and add this block to the blockchain and the new blockchain is updated in the network. 
+		# Performs Bitcoin mining for the walletId sent in the input.
+		# Gets the latest blockchain from the network and updates the current version of the blockchain maintained by the wallet.
+		# Using the hash of the last block on the blockchain, a random nonce value is appended to the hash and this new string is hashed again.
+		# If we get a hash with the required target leading 0s, we have managed to mine a bitcoin successfully.
+		# In this case, we create a coinbase transaction, add it to a block and add this block to the blockchain and the new blockchain is updated in the network.
 		# If the hash does not contain the required target leading 0s, we call the same function recursively again for the same walletId.
 	"""
 	def mining(walletId) do
 		{name, publicKey, privateKey, allPublicKeys, uTransactions, allTransactions, blockchain, target, networkId, walletBalance} = getWalletState(walletId)
-		
+
 		networkBlockchain = getNetworkBlockchain(networkId)
 		lastBlockId = Enum.fetch!(blockchain, length(blockchain)-1)
 		blockchain = updateWalletBlockchain(walletId, networkBlockchain)
 
-		
+
 		{blockIndex, blockTime, blockHash, blockPrevHash, blockTransactions, blockLength, blockMerkleRoot} = getBlockState(lastBlockId)
 
 		# get random string with length <difficulty>
@@ -175,9 +175,9 @@ defmodule Bitcoin do
 				]
 			]
 			coinBaseTransactionId = generateTransaction(coinBaseTransactionInputs, coinBaseTransactionOutputs)
-			
 
-			
+
+
 			transactions = getNetworkConfirmedTransactionPool(networkId)
 			# IO.inspect transactions
 
@@ -199,7 +199,7 @@ defmodule Bitcoin do
 
 				updateWalletUnusedTransactions(walletId, coinBaseTransactionId,blockReward)
 				{name, publicKey, privateKey, allPublicKeys, uTransactions, allTransactions, blockchain, target, networkId, walletBalance} = getWalletState(walletId)
-				
+
 				# IO.puts "Bitcoin mined successfully!"
 
 				# getWalletBalance(walletId)
@@ -208,7 +208,7 @@ defmodule Bitcoin do
 			else
 				mining(walletId)
 			end
-			
+
 		else
 			mining(walletId)
 		end

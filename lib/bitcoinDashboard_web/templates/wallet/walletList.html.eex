@@ -1,63 +1,77 @@
 <body class="bg-dark">
+  <div id="wrapper">
+    
+    <div id="content-wrapper">
+    <!-- <section class="container" style="margin: 20px 0;">
+      <center >
+        <button class="btn btn-success" > Generate Wallets </button>
+      </center>
+    </section> -->
 
-    <div class="container">
-      <div class="card card-register mx-auto mt-5">
-        <div class="card-header">Register an Account</div>
-        <div class="card-body">
-          <form>
-            <div class="form-group">
-              <div class="form-row">
-                <div class="col-md-6">
-                  <div class="form-label-group">
-                    <input type="text" id="firstName" class="form-control" placeholder="First name" required="required" autofocus="autofocus">
-                    <label for="firstName">First name</label>
+    <div id="wallet-list" class="row"></div>
+    
+
+    <!-- <section class="container" style="margin: 20px 0;">
+      <center >
+        <button class="btn btn-success" id="mineButton"> Mine </button>
+      </center>
+    </section> -->
+    <div id="view-wallet-data" class="row"></div>
+    
+    <div id="mine-data" class="row"></div>
+
+    <div id="generated-transaction-data"></div>
+
+    <div id="generate-wallets-for-transaction" class="row" style="display: none;">
+        <div class="card" style="width: 100%;">
+            <div class="card-body">
+              <h5 class="card-title">Generate Transaction</h5>
+              <p class="card-text">
+                <div class="row">
+                  <div class="col-md-3">
+                      <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <label class="input-group-text" for="inputGroupSelect01">From Wallet </label>
+                          </div>
+                          <select class="custom-select" name="fromWallet" id="fromWallet">
+                          </select>
+                        </div>
                   </div>
+                  <div class="col-md-3">
+                      <div class="input-group mb-3">
+                          <div class="input-group-prepend">
+                            <label class="input-group-text" for="inputGroupSelect01">To Wallet </label>
+                          </div>
+                          <select class="custom-select" name="toWallet" id="toWallet">
+                          </select>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                              <span class="input-group-text" id="basic-addon1">BTC</span>
+                            </div>
+                            <input type="text" class="form-control" placeholder="Amount" aria-label="Amount" aria-describedby="basic-addon1" id="transactionAmount">
+                          </div>
+                    </div>
+                    <div class="col-md-3">
+                        <center >
+                          <button class="btn btn-success" id="generateTransactionButton"> Send </button>
+                        </center>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                  <div class="form-label-group">
-                    <input type="text" id="lastName" class="form-control" placeholder="Last name" required="required">
-                    <label for="lastName">Last name</label>
-                  </div>
-                </div>
-              </div>
+              </p>
+              
             </div>
-            <div class="form-group">
-              <div class="form-label-group">
-                <input type="email" id="inputEmail" class="form-control" placeholder="Email address" required="required">
-                <label for="inputEmail">Email address</label>
-              </div>
-            </div>
-            <div class="form-group">
-              <div class="form-row">
-                <div class="col-md-6">
-                  <div class="form-label-group">
-                    <input type="password" id="inputPassword" class="form-control" placeholder="Password" required="required">
-                    <label for="inputPassword">Password</label>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-label-group">
-                    <input type="password" id="confirmPassword" class="form-control" placeholder="Confirm password" required="required">
-                    <label for="confirmPassword">Confirm password</label>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <a class="btn btn-primary btn-block" href="login.html">Register</a>
-          </form>
-          <div class="text-center">
-            <a class="d-block small mt-3" href="login.html">Login Page</a>
-            <a class="d-block small" href="forgot-password.html">Forgot Password?</a>
           </div>
-        </div>
-      </div>
+
+        
     </div>
 
-    <!-- Bootstrap core JavaScript>
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <div id="view-blockchain-data"></div>
 
-    <- Core plugin JavaScript>
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script-->
-
-  </body>
+    <div id="viewTransactions"></div>
+    
+  </div>
+</div>
+</body>

@@ -1,3 +1,6 @@
+# import Block
+# import Transaction
+
 defmodule Network do
   use GenServer
   def generateNetwork do
@@ -15,7 +18,7 @@ defmodule Network do
   """
   def init(:ok) do
     timeStamp = :os.system_time(:millisecond)
-    {:ok, {[], [], [], []}} 
+    {:ok, {[], [], [], []}}
   end
   def startNetwork do
     {:ok,pid}=GenServer.start_link(__MODULE__, :ok,[])
@@ -33,7 +36,7 @@ defmodule Network do
   def handle_call({:GetNetworkState}, _from ,state) do
     {:reply, state, state}
   end
-  
+
   def getNetworkState(pid) do
     GenServer.call(pid,{:GetNetworkState})
   end
@@ -89,7 +92,7 @@ defmodule Network do
   end
   def handle_call({:UpdateNetworkWalletIdMaps,map}, _from ,state) do
     {a,b,c,d} = state
-    state={a,b,c++[map],d}
+    state={a,b,c ++ map,d}
     {:reply,c,state}
   end
 
@@ -98,8 +101,14 @@ defmodule Network do
   end
   def handle_call({:UpdateNetworkConfirmedTransactionPool,transaction}, _from ,state) do
     {a,b,c,d} = state
-    state={a,b,c,d++ [transaction]}
-    {:reply,d,state}
+    IO.inspect d
+    IO.inspect transaction
+    if !Enum.member?(d,transaction) do
+      state={a,b,c,d++ [transaction]}
+      {:reply,d,state}
+    else
+      {:reply,d,state}
+    end
   end
 
   def removeNetworkConfirmedTransactionPool(pid,transaction) do
@@ -111,5 +120,9 @@ defmodule Network do
     {:reply,d,state}
   end
 
+  def getNetworkId do
+		netID =:ets.lookup(:table, "networkId")
+		elem(Enum.fetch!(netID,0),1)
+	end
 
 end

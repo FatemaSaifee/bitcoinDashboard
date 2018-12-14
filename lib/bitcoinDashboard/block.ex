@@ -1,10 +1,11 @@
 import Commons
 import Transaction
+import Network
 
 defmodule Block do
 
     @doc """
-    # Creates a new block with the genesis Transaction Id received in the input. 
+    # Creates a new block with the genesis Transaction Id received in the input.
     # Generates merkle root for the block and then calculates the final Hash for the block,
     # proceeding to update it in its state.
     """
@@ -13,13 +14,13 @@ defmodule Block do
         {index, time, hash, prevHash, transactions, length, merkleRoot} = getBlockState(blockId)
         # IO.inspect({index, time, hash, prevHash, transactions, length, merkleRoot})
 
+        {_,_, _, _, transactionHash, _} = getTxState(transactionId)
+        merkleRoot = merkle_tree_hash([transactionHash])
 
         # Update the block states
         updateBlockState(blockId, index, prevHash, [transactionId], merkleRoot)
         # IO.inspect transactionId
-        {_,_, _, _, transactionHash, _} = getTxState(transactionId)
 
-        merkleRoot = merkle_tree_hash([transactionHash])
         {index, time, hash, prevHash, transactions, length, merkleRoot} = getBlockState(blockId)
 
         # Calculate the hash for the block
@@ -30,9 +31,9 @@ defmodule Block do
     end
 
     @doc """
-    # Creates a new block with the transactions received in the input. 
-    # Updates new index and prevHash of new block using the values oldBlockId. 
-    # Calculates the hash of all transactions sent in the input and also generates Merkle Root. 
+    # Creates a new block with the transactions received in the input.
+    # Updates new index and prevHash of new block using the values oldBlockId.
+    # Calculates the hash of all transactions sent in the input and also generates Merkle Root.
     # Finally after all calculations for the current block, it performs a hash of the current block and updates its hash value in its state and finally returns the new block id.
         """
     def generateBlock(oldBlockId, transactions) do
@@ -56,8 +57,8 @@ defmodule Block do
     end
 
     @doc """
-    For the given block id received in the input, this function calculates the hash for the block. 
-    It gets the current state of the block, concatenates the index, timestamp, previous hash, Merkle root and performs a SHA256 hash on this concatenated string. 
+    For the given block id received in the input, this function calculates the hash for the block.
+    It gets the current state of the block, concatenates the index, timestamp, previous hash, Merkle root and performs a SHA256 hash on this concatenated string.
     This is the hash of the block and the value that is returned by the function.
     """
     def calculateHash(blockId) do
@@ -65,6 +66,19 @@ defmodule Block do
         record = Integer.to_string(index) <> Integer.to_string(time) <> prevHash <> merkleRoot
         :crypto.hash(:sha256, record) |> Base.encode16
     end
+
+
+    def getBlockchain() do
+        networkId = getNetworkId()
+        blockchain = getNetworkBlockchain(networkId)
+
+        blocks = Enum.map(blockchain, fn(bId) ->
+          {blockIndex, blockTime, blockHash, blockPrevHash, blocktransactions, blockLength, blockMerkleRoot} = getBlockState(bId)
+          %{blockIndex: blockIndex, blockTime: blockTime, blockHash: blockHash, blockPrevHash: blockPrevHash, blockMerkleRoot: blockMerkleRoot}
+        end)
+        blocks
+    end
+
 
     @doc """
 
@@ -81,7 +95,7 @@ defmodule Block do
     """
     def init(:ok) do
         timeStamp = :os.system_time(:millisecond)
-        {:ok, {0,timeStamp,"", "", [], 0, ""}} 
+        {:ok, {0,timeStamp,"", "", [], 0, ""}}
     end
     def startBlock() do
         {:ok,pid}=GenServer.start_link(__MODULE__, :ok,[])

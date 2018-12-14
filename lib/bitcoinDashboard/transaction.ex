@@ -4,8 +4,8 @@ import Network
 defmodule Transaction do
 
     @doc """
-    Generates the first transaction in the Bitcoin System. This transaction is later used in creating a genesis Block. 
-    The genesis transaction does not contain any input transactions. 
+    Generates the first transaction in the Bitcoin System. This transaction is later used in creating a genesis Block.
+    The genesis transaction does not contain any input transactions.
     It contains one output field whose value is 50 BTC and public key to which this is sent is “1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa”.
     It is said to be the public key address of creator of Bitcoin, Satoshi Nakamoto. It is never used for any further transactions.
     """
@@ -35,9 +35,9 @@ defmodule Transaction do
     Generates the first transaction in the Bitcoin System. This transaction can be later used in creating a genesis Block.
     The Transaction Arguments will have the State structure as:
         # inputs = [[inputHash, inputSignature, inputPublicKey]...],
-        # outputs = [[outputValue, ouputPublicKey]] 
+        # outputs = [[outputValue, ouputPublicKey]]
     Example
-        iex> Transaction.generateTransaction() 
+        iex> Transaction.generateTransaction()
     Output
         #PID<0.100.0>  // Transaction ID
     """
@@ -53,6 +53,99 @@ defmodule Transaction do
         tId
     end
 
+    def generateTransaction(fromWallet, toWallet, amount, sign) do
+        IO.puts("fromWallet +#{fromWallet}")
+        IO.puts("toWallet +#{toWallet}")
+        IO.puts("amount +#{amount}")
+
+        amount =elem(Integer.parse(amount), 0)
+
+        networkId = getNetworkIdTemp()
+        {_,_,walletIdPublicKeysMap,_} = getNetworkState(networkId)
+
+        sender = Enum.map(walletIdPublicKeysMap, fn(wId)->
+            wId = Enum.fetch!(wId,0)
+            {_, publicKey,_ , _,_ , _,_ , _,_ , _} = getWalletState(wId)
+            if publicKey == fromWallet do
+                wId
+            end
+        end)
+
+        receiver = Enum.map(walletIdPublicKeysMap, fn(wId)->
+            wId = Enum.fetch!(wId,0)
+            {_, publicKey,_ , _,_ , _,_ , _,_ , _} = getWalletState(wId)
+            if publicKey == toWallet do
+                wId
+            end
+        end)
+
+        IO.inspect sender
+        IO.inspect receiver
+        sender = Enum.fetch!(Enum.filter(sender, fn y -> y != nil end),0)
+        receiver = Enum.fetch!(Enum.filter(receiver, fn y -> y != nil end),0)
+        createWalletToWalletTx(sender,receiver,amount)
+        {fromname, frompublicKey,_ , _,_ , _,_ , _,_ , fromwalletBalance} = getWalletState(sender)
+        {toname, topublicKey,_ , _,_ , _,_ , _,_ , towalletBalance} = getWalletState(receiver)
+
+        # IO.inspect [%{name: fromname, publicKey: frompublicKey, walletBalance: fromwalletBalance}, %{name: toname, publicKey: topublicKey, walletBalance: towalletBalance}]
+        from = %{name: fromname, publicKey: frompublicKey, walletBalance: fromwalletBalance}
+        to = %{name: toname, publicKey: topublicKey, walletBalance: towalletBalance}
+
+        # %{from: %{name: fromname, publicKey: frompublicKey, walletBalance: fromwalletBalance},
+        # to: %{name: toname, publicKey: topublicKey, walletBalance: towalletBalance}}
+        [from, to]
+    end
+
+
+    def getConfirmedTransactions() do
+        networkId = getNetworkId()
+
+        confirmedTransactions = getNetworkConfirmedTransactionPool(networkId)
+
+        transactions = Enum.map(confirmedTransactions, fn(tId)->
+            {isVerified,input,output,timestamp,hash,verifiedByWallets} = getTxState(tId)
+            amounts = Enum.map(output, fn(eachOutput)->
+                Enum.fetch!(eachOutput,0)
+                IO.inspect Enum.fetch!(eachOutput,0)
+                end)
+            totalAmount =Enum.fetch!(amounts,0)
+            IO.puts "total amount: #{totalAmount}"
+            tx = %{hash: hash, totalAmount: totalAmount, timestamp: timestamp, noOfVerifications: length(verifiedByWallets)}
+            tx
+        end)
+        transactions
+    end
+
+    def getUnconfirmedTransactions() do
+        networkId = getNetworkId()
+
+        # unconfirmedTransactions = getNetworkUnconfirmedTransactionPool(networkId)
+        {_,unconfirmedTransactions,walletIdPublicKeysMap,_} = getNetworkState(networkId)
+
+        # :timer.sleep(1000)
+        Enum.each(walletIdPublicKeysMap, fn(x) ->
+			wId =  Enum.fetch!(x, 0)
+			:timer.sleep(10)
+			Task.start(Transaction,:verifyTransaction,[wId])
+		end)
+
+        transactions = Enum.map(unconfirmedTransactions, fn(tId)->
+            {isVerified,input,output,timestamp,hash,verifiedByWallets} = getTxState(tId)
+            amounts = Enum.map(output, fn(eachOutput)->
+                Enum.fetch!(eachOutput,0)
+                IO.inspect Enum.fetch!(eachOutput,0)
+                end)
+            totalAmount = Enum.fetch!(amounts,0)
+            IO.puts "total amount: #{totalAmount}"
+            tx = %{hash: hash, totalAmount: totalAmount, timestamp: timestamp, noOfVerifications: length(verifiedByWallets)}
+            tx
+        end)
+
+
+        transactions
+    end
+
+
 
     @doc """
     Create a sender to receiver transaction. Main features of this transaction are:
@@ -67,19 +160,19 @@ defmodule Transaction do
         - Receiver - PID of the wallet of the receiver
         - Amount - Number of BTC to be transferred
     Example
-        iex> Transaction.createWalletToWalletTx(#PID<0.100.0, #PID<0.101.0, 20.00) 
+        iex> Transaction.createWalletToWalletTx(#PID<0.100.0, #PID<0.101.0, 20.00)
     """
-    def createWalletToWalletTx(sender,receiver,amount) do
-        
+    def createWalletToWalletTx(sender, receiver, amount) do
 
-		{sname, publicKey, privateKey, allPublicKeys, uTransactions, allTransactions, blockchain, target, networkId, walletBalance} = getWalletState(sender) 
+
+		{sname, publicKey, privateKey, allPublicKeys, uTransactions, allTransactions, blockchain, target, networkId, walletBalance} = getWalletState(sender)
 		{rname, receiverPublicKey, _, _, _, _, _, _, _, _} = getWalletState(receiver)
         # IO.puts "   Sending #{amount} BTC from Wallet# #{sname} ---> Wallet# #{rname}"
 
         {inputIds, residualAmount} = getRequiredInputs(publicKey, uTransactions, amount)
 
         if(residualAmount>=0) do
-            
+
             uTransactions = uTransactions -- inputIds
 
             inputs = Enum.map(inputIds, fn(x)->
@@ -102,7 +195,7 @@ defmodule Transaction do
                 updateWalletUnusedTransactions(sender,txId,residualAmount)
 
                 # IO.puts "outputsssssssssssss"
-                # IO.inspect outputs   
+                # IO.inspect outputs
             else
                 outputs = [
                     [amount,receiverPublicKey]
@@ -116,10 +209,10 @@ defmodule Transaction do
             Enum.map(inputIds,fn(x)->
                 {_, _, outputs, _, _, _} = getTxState(x)
                 outputTotal = Enum.sum(Enum.map(outputs,fn(y) ->
-                    if (publicKey == Enum.fetch!(y, 1)) do  
+                    if (publicKey == Enum.fetch!(y, 1)) do
                         Enum.fetch!(y, 0)
-                    else 
-                        0 
+                    else
+                        0
                     end
                 end))
                 removeWalletUnusedTransactions(sender,x,outputTotal)
@@ -141,10 +234,10 @@ defmodule Transaction do
 
             {_, _, outputs, _, _, _} = getTxState(x)
             outputTotal = Enum.sum(Enum.map(outputs,fn(y) ->
-                if (walletPublicKey == Enum.fetch!(y, 1)) do  
+                if (walletPublicKey == Enum.fetch!(y, 1)) do
                     Enum.fetch!(y, 0)
-                else 
-                    0 
+                else
+                    0
                 end
             end))
 
@@ -187,34 +280,39 @@ defmodule Transaction do
                 if Enum.member?(allPublicKeys, inputPublicKey) do
                     :crypto
                     verifySignature(inputPublicKey,inputSignature,"takemymoney")
-                    # IO.inspect verifySignature(inputPublicKey,inputSignature,"takemymoney")            
+                    # IO.inspect verifySignature(inputPublicKey,inputSignature,"takemymoney")
                 else
                     false
                 end
             end)
-            
+
             if Enum.member?(validateList,false) do
                 false
             else
                 updateTxVerifiedWalletList(transactionId,walletId)
                 # IO.inspect(transactionId)
-                IO.puts("Transaction verified by wallet")
-                IO.puts("#{length(verifiedByWallets)}")
-                if length(verifiedByWallets)+1 >= 0.50*length(allPublicKeys) do
-                    IO.puts("Transaction verified by network")    
+                if length(verifiedByWallets)+1 >= 0.80*length(allPublicKeys) do
                     removeNetworkUnconfirmedTransactionFromPool(networkId,[transactionId])
                     {_,_,_,confirmedTransactions} = getNetworkState(networkId)
                     if !Enum.member?(confirmedTransactions,transactionId) do
                         updateNetworkConfirmedTransactionPool(networkId,transactionId)
                     end
-                    
+
                     IO.inspect(getNetworkConfirmedTransactionPool(networkId))
                 end
-                
+
             end
         end
         verifyTransaction(walletId)
     end
+
+
+    def getConfirmedTransaction() do
+        networkId = getNetworkId()
+        confirmedTransactions = getNetworkConfirmedTransactionPool(networkId)
+        # !!!!!!!!!!!!!!!!!!!!!!!!!
+        confirmedTransactions
+      end
 
     @doc """
         isVerified - unused
@@ -235,7 +333,7 @@ defmodule Transaction do
     """
     def init(:ok) do
         timeStamp = :os.system_time(:millisecond)
-        {:ok, {true,[], [], timeStamp, "",[]}} 
+        {:ok, {true,[], [], timeStamp, "",[]}}
     end
     def startTransaction do
         {:ok,pid}=GenServer.start_link(__MODULE__, :ok,[])
@@ -301,13 +399,13 @@ defmodule Transaction do
 
         {isVerified,input,output,timestamp,hash,verifiedByWallets} = getTxState(tId)
 
-        eachInputHashList = Enum.map(input, fn(x) -> 
+        eachInputHashList = Enum.map(input, fn(x) ->
             Enum.join(x,"")
         end)
 
         inputsHash = Enum.join(eachInputHashList,"")
 
-        eachOutputHashList = Enum.map(output, fn(x) ->    
+        eachOutputHashList = Enum.map(output, fn(x) ->
             to_string(Enum.fetch!(x,0)) <> Enum.fetch!(x,1)
         end)
 
@@ -320,27 +418,32 @@ defmodule Transaction do
 
     end
 
-    
+
     @ecdsa_curve :secp256k1
     @type_signature :ecdsa
     @type_hash :sha256
     def generateSignature(private_key, message) do
-        signature = 
+        signature =
             :crypto.sign(
                 @type_signature,
-                @type_hash, 
-                message, 
+                @type_hash,
+                message,
                 [Base.decode16!(private_key), @ecdsa_curve]
             ) |> Base.encode16
-        # {:ok, {0, public_key, private_key, "", [], []}} 
+        # {:ok, {0, public_key, private_key, "", [], []}}
     end
 
     def verifySignature(public_key, signature, message) do
         :crypto.verify(
-            @type_signature, 
-            @type_hash, 
-            message, 
-            Base.decode16!(signature), 
+            @type_signature,
+            @type_hash,
+            message,
+            Base.decode16!(signature),
             [Base.decode16!(public_key), @ecdsa_curve])
     end
+
+    def getNetworkIdTemp do
+		netID =:ets.lookup(:table, "networkId")
+		elem(Enum.fetch!(netID,0),1)
+	end
 end
